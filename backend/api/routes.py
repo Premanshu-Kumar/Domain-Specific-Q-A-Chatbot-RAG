@@ -3,16 +3,19 @@ API Routes
 ==========
 Flask blueprint exposing REST endpoints for the RAG application.
 
-Phase 1 endpoints:
+Endpoints:
     POST /api/upload      — Upload and index a document
     GET  /api/documents   — List indexed documents (stats)
     POST /api/search      — Semantic search over indexed chunks
+    POST /api/chat        — Full RAG chat with grounded answers + citations
     GET  /api/health      — Health check
 """
 
+from __future__ import annotations
+
 import os
 import logging
-from pathlib import Path
+from typing import Any, Dict, List
 
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
@@ -122,6 +125,12 @@ def search():
         return jsonify({"error": "Missing 'query' in request body"}), 400
 
     top_k = data.get("top_k", current_app.config.get("TOP_K", 5))
+    try:
+        top_k = int(top_k)
+        if top_k < 1 or top_k > 50:
+            return jsonify({"error": "top_k must be between 1 and 50"}), 400
+    except (TypeError, ValueError):
+        return jsonify({"error": "top_k must be an integer"}), 400
 
     try:
         pipeline = current_app.config["PIPELINE"]
@@ -144,6 +153,116 @@ def search():
     except Exception as exc:
         logger.exception("Search error")
         return jsonify({"error": "Search failed", "details": str(exc)}), 500
+
+
+# ── Chat (Phase 2) ───────────────────────────────────────────
+
+@api_bp.route("/chat", methods=["POST"])
+def chat():
+    """
+    Full RAG chat endpoint — retrieve relevant chunks and generate a
+    grounded answer with source citations.
+
+    Expects JSON body::
+
+        {
+          "question": "How many annual leave days are employees entitled to?",
+          "top_k": 5,                    # optional
+          "min_similarity": 0.25,        # optional
+          "history": [                  # optional multi-turn context
+            {"role": "user", "content": "..."},
+            {"role": "assistant", "content": "..."}
+          ]
+        }
+
+    Returns:
+        200 with answer, sources, retrieved chunks, model metadata.
+        400 on validation error.
+        500 on internal error.
+    """
+    data = request.get_json(silent=True) or {}
+
+    # Accept both "question" and "query" for convenience
+    question = (data.get("question") or data.get("query") or "").strip()
+    if not question:
+        return jsonify({
+            "error": "Missing 'question' (or 'query') in request body"
+        }), 400
+
+    if len(question) > 4000:
+        return jsonify({"error": "Question is too long (max 4000 characters)"}), 400
+
+    # Optional parameters with validation
+    top_k = data.get("top_k", current_app.config.get("TOP_K", 5))
+    try:
+        top_k = int(top_k)
+        if top_k < 1 or top_k > 50:
+            return jsonify({"error": "top_k must be between 1 and 50"}), 400
+    except (TypeError, ValueError):
+        return jsonify({"error": "top_k must be an integer"}), 400
+
+    min_similarity = data.get(
+        "min_similarity",
+        current_app.config.get("MIN_SIMILARITY", 0.0),
+    )
+    try:
+        min_similarity = float(min_similarity)
+        if not 0.0 <= min_similarity <= 1.0:
+            return jsonify({"error": "min_similarity must be between 0.0 and 1.0"}), 400
+    except (TypeError, ValueError):
+        return jsonify({"error": "min_similarity must be a number"}), 400
+
+    # Optional conversation history
+    history: List[Dict[str, str]] = data.get("history") or data.get("conversation_history") or []
+    if history and not isinstance(history, list):
+        return jsonify({"error": "'history' must be a list of message objects"}), 400
+
+    # Sanitize history entries
+    clean_history: List[Dict[str, str]] = []
+    for turn in history[-8:]:  # keep last 8 turns max
+        if isinstance(turn, dict):
+            role = turn.get("role", "")
+            content = turn.get("content", "")
+            if role in ("user", "assistant") and isinstance(content, str) and content.strip():
+                clean_history.append({"role": role, "content": content.strip()[:2000]})
+
+    try:
+        pipeline = current_app.config["PIPELINE"]
+        result = pipeline.query(
+            question=question,
+            top_k=top_k,
+            min_similarity=min_similarity,
+            conversation_history=clean_history or None,
+        )
+
+        if not result.get("success"):
+            return jsonify({
+                "error": result.get("error", "Query failed"),
+            }), 400
+
+        response: Dict[str, Any] = {
+            "question": result["question"],
+            "answer": result["answer"],
+            "sources": result.get("sources", []),
+            "result_count": result.get("result_count", 0),
+            "model": result.get("model"),
+            "provider": result.get("provider"),
+            "tokens_used": result.get("tokens_used"),
+        }
+
+        # Optionally include retrieved chunks (useful for debugging / UI)
+        include_chunks = data.get("include_chunks", False)
+        if include_chunks:
+            response["results"] = result.get("results", [])
+
+        if result.get("error"):
+            response["warning"] = result["error"]
+
+        return jsonify(response), 200
+
+    except Exception as exc:
+        logger.exception("Chat error")
+        return jsonify({"error": "Chat failed", "details": str(exc)}), 500
 
 
 # ── Collection Stats ─────────────────────────────────────────
