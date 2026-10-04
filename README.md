@@ -203,6 +203,7 @@ Domain-Specific Q&A Chatbot — RAG/
 ├── .env.example                # Example environment configuration
 ├── .gitignore                  # Git ignore rules
 ├── requirements.txt            # Python dependencies
+├── CONTRIBUTORS.md             # Project contributors
 └── README.md                   # Project documentation
 ```
 
@@ -342,6 +343,17 @@ The API server will run at `http://localhost:5000`.
 ## 💼 Resume Highlights
 
 > **Developed a full-stack Retrieval-Augmented Generation (RAG) knowledge assistant using React, Flask, LangChain, ChromaDB, and Sentence Transformers, enabling context-aware question answering over custom document collections with source-grounded responses and anti-hallucination guardrails.**
+
+---
+
+## 👥 Contributors
+
+| Name | Role |
+|------|------|
+| **Premanshu Kumar** | Project author, Phase 1 & overall design |
+| **Grok AI Bot** ([xAI](https://x.ai)) | Phase 2 implementation (RAG pipeline, LLM generation, `/api/chat`, tests, docs) |
+
+See [CONTRIBUTORS.md](CONTRIBUTORS.md) for more details.
 
 ---
 
