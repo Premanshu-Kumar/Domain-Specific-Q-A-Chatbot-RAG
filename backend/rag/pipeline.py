@@ -1,39 +1,41 @@
 """
-Document Indexing Pipeline
-==========================
+Document Indexing & RAG Query Pipeline
+======================================
 Orchestrates the end-to-end flow:
 
     File → Text Extraction → Cleaning → Chunking → Embedding → Vector Store
 
-This is the main entry-point that the API routes call to process
-uploaded documents.
+And the query-time RAG flow:
+
+    Query → Retrieve Top-K → Build Context → Generate Grounded Answer
+
+This is the main entry-point that the API routes call.
 """
+
+from __future__ import annotations
 
 import logging
 import uuid
-from typing import Dict, Any
+from typing import Any, Dict, List, Optional
 
 from .ingestion import DocumentIngestor
 from .chunking import TextChunker
 from .embeddings import EmbeddingManager
+from .retrieval import Retriever
+from .generation import Generator
 
 logger = logging.getLogger(__name__)
 
 
 class IndexingPipeline:
     """
-    End-to-end document indexing pipeline.
+    End-to-end document indexing + RAG query pipeline.
 
     Usage::
 
-        pipeline = IndexingPipeline(
-            chunk_size=1000,
-            chunk_overlap=200,
-            embedding_model="all-MiniLM-L6-v2",
-            persist_directory="./vectorstore",
-        )
+        pipeline = IndexingPipeline(...)
         result = pipeline.process_document("./uploads/handbook.pdf")
-        print(result)
+        answer = pipeline.query("How many leave days do employees get?")
     """
 
     def __init__(
@@ -43,6 +45,15 @@ class IndexingPipeline:
         embedding_model: str = "all-MiniLM-L6-v2",
         persist_directory: str = "./vectorstore",
         collection_name: str = "rag_documents",
+        top_k: int = 5,
+        min_similarity: float = 0.0,
+        # LLM settings
+        llm_model: str = "gpt-3.5-turbo",
+        openai_api_key: str = "",
+        groq_api_key: str = "",
+        llm_provider: str = "auto",
+        temperature: float = 0.2,
+        max_tokens: int = 1024,
     ):
         logger.info("Initializing IndexingPipeline …")
         self.ingestor = DocumentIngestor()
@@ -55,9 +66,23 @@ class IndexingPipeline:
             persist_directory=persist_directory,
             collection_name=collection_name,
         )
+        self.retriever = Retriever(
+            embedding_manager=self.embedding_manager,
+            top_k=top_k,
+        )
+        self.generator = Generator(
+            model_name=llm_model,
+            api_key=openai_api_key,
+            groq_api_key=groq_api_key,
+            provider=llm_provider,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        self.top_k = top_k
+        self.min_similarity = min_similarity
         logger.info("IndexingPipeline ready ✓")
 
-    # ── public API ───────────────────────────────────────────
+    # ── Document indexing ────────────────────────────────────
 
     def process_document(self, file_path: str) -> Dict[str, Any]:
         """
@@ -67,13 +92,6 @@ class IndexingPipeline:
             1. **Extract** — pull raw text from the file
             2. **Chunk**   — clean + split into overlapping segments
             3. **Index**   — embed chunks and store in ChromaDB
-
-        Args:
-            file_path: Path to the uploaded document.
-
-        Returns:
-            Result dict summarising each stage, including
-            ``success``, ``document_id``, chunk counts, etc.
         """
         document_id = uuid.uuid4().hex[:12]
         logger.info("▸ Pipeline start — file='%s'  doc_id='%s'", file_path, document_id)
@@ -137,6 +155,68 @@ class IndexingPipeline:
             total_in_store=indexing.get("total_chunks", 0),
             error=indexing.get("error"),
         )
+
+    # ── RAG query (Phase 2) ──────────────────────────────────
+
+    def query(
+        self,
+        question: str,
+        *,
+        top_k: Optional[int] = None,
+        min_similarity: Optional[float] = None,
+        conversation_history: Optional[List[Dict[str, str]]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Full RAG query: retrieve relevant chunks → generate grounded answer.
+
+        Args:
+            question:             User's natural-language question.
+            top_k:                Override default number of chunks.
+            min_similarity:       Override minimum cosine similarity filter.
+            conversation_history: Optional prior turns for multi-turn context.
+
+        Returns:
+            Dict containing answer, sources, retrieved chunks, model info, etc.
+        """
+        if not question or not question.strip():
+            return {
+                "success": False,
+                "error": "Question cannot be empty",
+                "answer": "",
+                "sources": [],
+                "results": [],
+            }
+
+        k = top_k if top_k is not None else self.top_k
+        sim = min_similarity if min_similarity is not None else self.min_similarity
+
+        # 1. Retrieve
+        retrieval = self.retriever.retrieve(
+            query=question.strip(),
+            top_k=k,
+            min_similarity=sim,
+        )
+
+        # 2. Generate
+        generation = self.generator.generate(
+            query=question.strip(),
+            context=retrieval["context"],
+            sources=retrieval["sources"],
+            conversation_history=conversation_history,
+        )
+
+        return {
+            "success": True,
+            "question": question.strip(),
+            "answer": generation["answer"],
+            "sources": generation.get("sources", retrieval["sources"]),
+            "results": retrieval["results"],
+            "result_count": len(retrieval["results"]),
+            "model": generation.get("model"),
+            "provider": generation.get("provider"),
+            "tokens_used": generation.get("tokens_used"),
+            "error": generation.get("error"),
+        }
 
     def get_stats(self) -> Dict[str, Any]:
         """Return vector-store statistics."""
