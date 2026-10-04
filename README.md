@@ -2,7 +2,7 @@
 
 > **A full-stack AI-powered knowledge assistant that uses Retrieval-Augmented Generation (RAG) to answer questions from custom documents with relevant, context-aware responses and source citations.**
 
-![Status](https://img.shields.io/badge/Status-Phase%201%20Completed-success)
+![Status](https://img.shields.io/badge/Status-Phase%202%20Completed-success)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
 ![React](https://img.shields.io/badge/React-18%2B-61DAFB)
 ![Flask](https://img.shields.io/badge/Flask-Backend-black)
@@ -181,7 +181,7 @@ Domain-Specific Q&A Chatbot — RAG/
 ├── backend/
 │   ├── api/
 │   │   ├── __init__.py
-│   │   └── routes.py           # REST endpoints (/upload, /search, /documents, /health)
+│   │   └── routes.py           # REST endpoints (/upload, /search, /chat, /documents, /health)
 │   ├── config/
 │   │   ├── __init__.py
 │   │   └── settings.py         # Centralized configuration & environment variables
@@ -198,7 +198,8 @@ Domain-Specific Q&A Chatbot — RAG/
 │   └── app.py                  # Flask application entry point & factory
 ├── tests/
 │   ├── __init__.py
-│   └── test_pipeline.py        # Comprehensive unit & integration tests (12 passing tests)
+│   ├── test_pipeline.py        # Phase 1 unit & integration tests
+│   └── test_phase2.py         # Phase 2 RAG query & generation tests
 ├── .env.example                # Example environment configuration
 ├── .gitignore                  # Git ignore rules
 ├── requirements.txt            # Python dependencies
@@ -228,14 +229,16 @@ The project is developed in **4 major phases**:
 
 ---
 
-### 🔵 Phase 2 — RAG Pipeline & API `[NEXT]`
-* [ ] Implement query embeddings & cosine similarity search
-* [ ] Retrieve Top-K relevant chunks with score filtering
-* [ ] Build context generation & anti-hallucination prompt template
-* [ ] Integrate LLM (OpenAI / HuggingFace / Groq)
-* [ ] Implement grounded response generation
-* [ ] Implement conversational `/api/chat` endpoint with source citations
-* [ ] Add error handling and input validation
+### 🟢 Phase 2 — RAG Pipeline & API `[COMPLETED]`
+* [x] Implement query embeddings & cosine similarity search
+* [x] Retrieve Top-K relevant chunks with score filtering
+* [x] Build context generation & anti-hallucination prompt template
+* [x] Integrate LLM (OpenAI / Groq) with automatic provider selection
+* [x] Implement grounded response generation
+* [x] Implement conversational `/api/chat` endpoint with source citations
+* [x] Add error handling and input validation
+* [x] Support optional conversation history for multi-turn context
+* [x] Graceful stub mode when no API key is configured
 
 ---
 
@@ -280,7 +283,7 @@ Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
-*(Optionally add your `OPENAI_API_KEY` or custom configuration)*
+*(Optionally add your `OPENAI_API_KEY` or `GROQ_API_KEY`)*
 
 ### 3. Setup Python Virtual Environment
 ```bash
@@ -319,7 +322,7 @@ The API server will run at `http://localhost:5000`.
 | `POST` | `/api/upload` | Upload & index documents (`.pdf`, `.txt`, `.docx`) |
 | `POST` | `/api/search` | Semantic search over indexed documents |
 | `GET` | `/api/documents` | List indexed documents & collection statistics |
-| `POST` | `/api/chat` | Chat with RAG knowledge assistant *(Phase 2)* |
+| `POST` | `/api/chat` | Chat with RAG knowledge assistant (grounded answers + citations) |
 
 ---
 
