@@ -3,14 +3,16 @@ Retrieval Module
 ================
 Provides a thin retrieval interface over the EmbeddingManager's search.
 
-In Phase 1 this is a lightweight wrapper; Phase 2 will add:
-  • Query rewriting / expansion
-  • Hybrid search (dense + sparse)
-  • Re-ranking with a cross-encoder
+Phase 2 enhancements:
+  • Minimum similarity score filtering
+  • Clean context + source extraction
+  • Ready for future hybrid / re-ranking extensions
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from .embeddings import EmbeddingManager
 
@@ -46,7 +48,7 @@ class Retriever:
         Args:
             query:          Natural-language question.
             top_k:          Override the default number of results.
-            min_similarity: Discard results below this cosine similarity.
+            min_similarity: Discard results below this cosine similarity (0–1).
 
         Returns:
             Dict with keys:
@@ -55,23 +57,34 @@ class Retriever:
                 context  – concatenated text of all matched chunks
                 sources  – deduplicated list of source filenames
         """
-        k = top_k or self.top_k
+        if not query or not query.strip():
+            return {
+                "query": query or "",
+                "results": [],
+                "context": "",
+                "sources": [],
+            }
+
+        k = top_k if top_k is not None else self.top_k
         raw_results = self.embedding_manager.search(query, top_k=k)
 
         # Apply minimum-similarity filter
         filtered = [
-            r for r in raw_results
+            r
+            for r in raw_results
             if r.get("similarity") is not None and r["similarity"] >= min_similarity
         ]
 
-        # Build concatenated context string
+        # Build concatenated context string and collect sources
         context_parts: List[str] = []
         sources: set[str] = set()
 
         for hit in filtered:
-            context_parts.append(hit["text"])
-            source = hit.get("metadata", {}).get("source")
-            if source:
+            text = hit.get("text", "").strip()
+            if text:
+                # Prefix each chunk with its source for better grounding
+                source = hit.get("metadata", {}).get("source", "unknown")
+                context_parts.append(f"[Source: {source}]\n{text}")
                 sources.add(source)
 
         context = "\n\n---\n\n".join(context_parts)

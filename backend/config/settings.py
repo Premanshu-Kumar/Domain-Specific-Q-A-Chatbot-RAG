@@ -47,12 +47,17 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME", "rag_documents")
 # Retrieval
 # ──────────────────────────────────────────────
 TOP_K = int(os.getenv("TOP_K", "5"))
+MIN_SIMILARITY = float(os.getenv("MIN_SIMILARITY", "0.0"))
 
 # ──────────────────────────────────────────────
 # LLM (Phase 2)
 # ──────────────────────────────────────────────
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-3.5-turbo")
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "auto")  # auto | openai | groq | stub
+LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.2"))
+LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "1024"))
 
 # ──────────────────────────────────────────────
 # Flask
