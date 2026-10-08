@@ -1,369 +1,629 @@
-# 🤖 Domain-Specific Q&A Chatbot — RAG
+# 🤖 Domain-Specific Q&A Chatbot — RAG + JEV
 
-> **A full-stack AI-powered knowledge assistant that uses Retrieval-Augmented Generation (RAG) to answer questions from custom documents with relevant, context-aware responses and source citations.**
+> An intelligent, domain-specific AI knowledge assistant that combines **Retrieval-Augmented Generation (RAG)** with **JEV-based orchestration** to provide grounded, context-aware answers from private document collections.
 
-![Status](https://img.shields.io/badge/Status-Phase%202%20Completed-success)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
 ![React](https://img.shields.io/badge/React-18%2B-61DAFB)
 ![Flask](https://img.shields.io/badge/Flask-Backend-black)
-![ChromaDB](https://img.shields.io/badge/VectorStore-ChromaDB-orange)
-![License](https://img.shields.io/badge/License-MIT-green)
+![RAG](https://img.shields.io/badge/AI-RAG-purple)
+![JEV](https://img.shields.io/badge/AI-JEV-orange)
+![Status](https://img.shields.io/badge/Phase%202-Completed-success)
+![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
 ---
 
-## 📌 Overview
+## 📌 Table of Contents
 
-This project is a **domain-specific AI chatbot built using Retrieval-Augmented Generation (RAG)**.
-
-Instead of relying entirely on an LLM's pre-trained knowledge, the system retrieves relevant information from a custom document collection and uses that context to generate grounded, fact-checked responses.
-
-Users can upload documents such as:
-* 📄 Company handbooks & SOPs
-* 📚 Academic materials & lecture notes
-* 🔧 Technical documentation & API guides
-* 📦 Product manuals & troubleshooting docs
-* ❓ FAQ documents
-* 📝 Policies and reports
-
-The goal is to build a practical **AI Knowledge Assistant** that can understand and answer questions from private or domain-specific information.
+- [Overview](#-overview)
+- [Why This Project](#-why-this-project)
+- [Key Features](#-key-features)
+- [System Architecture](#-system-architecture)
+- [RAG Pipeline](#-rag-pipeline)
+- [JEV Integration](#-jev-integration)
+- [Project Roadmap](#-project-roadmap)
+- [Project Structure](#-project-structure)
+- [Technology Stack](#-technology-stack)
+- [Current Status](#-current-status)
+- [Getting Started](#-getting-started)
+- [API Endpoints](#-api-endpoints)
+- [Example Workflow](#-example-workflow)
+- [Evaluation](#-evaluation)
+- [Future Enhancements](#-future-enhancements)
+- [Resume Description](#-resume-description)
+- [License](#-license)
 
 ---
 
-## 🎯 Why This Project?
+# 🚀 Overview
 
-Traditional chatbots depend primarily on predefined responses or general-purpose model knowledge.
+The **Domain-Specific Q&A Chatbot** is a full-stack AI application designed to answer questions from a user's private knowledge base.
 
-This project addresses that limitation by combining:
+Instead of relying only on an LLM's pre-trained knowledge, the system retrieves relevant information from uploaded documents and uses that information to generate **grounded responses with source references**.
+
+The project is being evolved from a traditional RAG chatbot into an **Agentic RAG system using JEV orchestration**.
+
+### Current Evolution
 
 ```text
-Custom Knowledge Base
-        +
-Semantic Retrieval
-        +
-Large Language Model
-        =
-Context-Aware AI Assistant
-```
-
-### Key Objectives
-* Build a complete end-to-end RAG pipeline
-* Understand document processing and embeddings
-* Implement semantic vector search with ChromaDB
-* Integrate an LLM for answer generation
-* Provide source-grounded responses
-* Build a modern full-stack AI application
-* Deploy the system as a production-ready application
-
----
-
-## 🏗️ System Architecture
-
-The application follows a **client-server architecture** with a RAG pipeline at its core.
-
-```text
-                         ┌───────────────────────┐
-                         │     React Frontend    │  (Phase 3)
-                         │                       │
-                         │  Chat • Upload • UI   │
-                         └───────────┬───────────┘
-                                     │
-                                     ▼
-                         ┌───────────────────────┐
-                         │       Flask API       │
-                         │                       │
-                         │   REST API + RAG      │
-                         └───────────┬───────────┘
-                                     │
-                    ┌────────────────┼────────────────┐
-                    │                │                │
-                    ▼                ▼                ▼
-             ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-             │  Document   │  │   Vector    │  │     LLM     │
-             │ Processing  │  │    Store    │  │ Generation  │
-             │ (Ingestion) │  │  (ChromaDB) │  │  (Phase 2)  │
-             └──────┬──────┘  └──────┬──────┘  └──────▲──────┘
-                    │                │                │
-                    ▼                ▼                │
-             ┌─────────────┐  ┌─────────────┐         │
-             │ Text        │  │ Embeddings  │─────────┘
-             │ Chunking    │  │ + Retrieval │
-             └─────────────┘  └─────────────┘
+Traditional RAG
+      ↓
+Reliable RAG
+      ↓
+JEV Orchestration
+      ↓
+Agentic RAG
+      ↓
+Evaluation
+      ↓
+Production AI Knowledge Assistant
 ```
 
 ---
 
-## 🔄 RAG Pipeline
+# 🎯 Why This Project?
 
-### 1. Document Ingestion
-Users upload supported documents (`.pdf`, `.txt`, `.docx`).
-```text
-PDF / TXT / DOCX ──► Text Extraction & Normalization
-```
+General-purpose AI models can sometimes:
 
-### 2. Text Processing & Cleaning
-The extracted content is cleaned and divided into smaller, semantically coherent chunks.
-```text
-Raw Text ──► Cleaning ──► Recursive Chunking ──► Metadata Enrichment
-```
+- Generate unsupported information
+- Lack access to private documents
+- Fail to retrieve domain-specific information
+- Provide answers without verifiable sources
 
-### 3. Embedding Generation
-Each chunk is converted into a numerical vector representation using an embedding model (e.g. `sentence-transformers/all-MiniLM-L6-v2` or OpenAI).
-```text
-Text Chunk ──► Embedding Model ──► Vector Representation (Dense Vector)
-```
+This project addresses these problems by combining:
 
-### 4. Vector Storage
-The generated embeddings are stored in a persistent ChromaDB vector collection with cosine similarity indexing.
+### 🔹 Retrieval-Augmented Generation
 
-### 5. Query Retrieval
-When the user asks a question:
-```text
-User Question ──► Query Embedding ──► Similarity Search ──► Top-K Relevant Chunks
-```
+Retrieve relevant document chunks before generating an answer.
 
-### 6. Answer Generation (Phase 2)
-The retrieved context is combined with anti-hallucination prompt instructions and passed to the LLM.
-```text
-Question + Retrieved Context ──► LLM ──► Context-Aware, Grounded Answer
-```
+### 🔹 Grounded Generation
 
-### 7. Response with Citations
-The generated answer is returned along with the exact source documents cited.
+The LLM generates answers using retrieved context instead of relying purely on internal knowledge.
+
+### 🔹 Source Attribution
+
+Relevant document sources are returned alongside answers.
+
+### 🔹 JEV Orchestration
+
+The next development stage introduces JEV as an orchestration layer that can determine **how a user query should be handled**.
 
 ---
 
-## ✨ Features
+# ✨ Key Features
 
-### 📄 Knowledge Base Upload
-Upload custom documents that become part of the chatbot's knowledge base.
-* **Supported formats:** PDF, TXT, DOCX
+## ✅ Currently Implemented
 
-### 🧠 Retrieval-Augmented Generation
-Retrieve relevant sections from the knowledge base before generating an answer, guaranteeing high accuracy and domain relevance.
+### 📄 Document Knowledge Base
 
-### 💬 Interactive Chat Interface (Phase 3)
-A modern React-based interface for asking questions, viewing conversation history, and receiving real-time AI responses.
+- Upload PDF/TXT documents
+- Extract document text
+- Split documents into chunks
+- Generate embeddings
+- Store embeddings in ChromaDB
+- Maintain document metadata
 
-### 📚 Source References
-Every response can cite the exact source files and chunks used to formulate the answer:
+### 🔎 Semantic Retrieval
+
+- Convert user questions into embeddings
+- Perform similarity search
+- Retrieve Top-K relevant chunks
+- Apply similarity score filtering
+
+### 🧠 Grounded RAG
+
+- Retrieved chunks are passed to the LLM
+- Context-aware prompt construction
+- Anti-hallucination instructions
+- Grounded responses
+
+### 💬 Conversational Chat
+
+- `/api/chat` endpoint
+- Conversation history support
+- Context-aware responses
+- Source citations
+- Input validation
+- Error handling
+
+### 🔌 Multiple LLM Providers
+
+The current implementation supports automatic provider selection between configured providers such as:
+
+- OpenAI
+- Groq
+
+A stub/fallback mode is also available when an API key is not configured.
+
+---
+
+# 🤖 Planned JEV Capabilities
+
+JEV will be introduced as an orchestration layer rather than replacing the existing RAG pipeline.
+
+Planned capabilities include:
+
+- Query intent detection
+- Intelligent workflow selection
+- RAG tool routing
+- Query rewriting
+- Multi-step retrieval
+- Agentic reasoning
+- Conversation-aware routing
+- Source verification
+- Future summary/comparison workflows
+
+---
+
+# 🏗️ System Architecture
+
+## Current Architecture — Phase 2
+
 ```text
-Answer: Employees are entitled to 20 days of annual leave according to the company leave policy.
-Sources: 📄 Employee_Handbook.pdf 📄 Leave_Policy.pdf
+                 ┌─────────────────────┐
+                 │   React Frontend    │
+                 │     Phase 3         │
+                 └──────────┬──────────┘
+                            │
+                            ▼
+                 ┌─────────────────────┐
+                 │     Flask API       │
+                 └──────────┬──────────┘
+                            │
+                            ▼
+                 ┌─────────────────────┐
+                 │    RAG Pipeline     │
+                 └──────────┬──────────┘
+                            │
+              ┌─────────────┼─────────────┐
+              ▼             ▼             ▼
+        Document       Embeddings      Retrieval
+        Processing        Model          Layer
+              │             │             │
+              └─────────────┼─────────────┘
+                            ▼
+                       ChromaDB
+                            │
+                            ▼
+                          LLM
+                            │
+                            ▼
+                  Grounded Response
 ```
 
-### 🧩 Conversation Memory
-Supports multi-turn conversations and contextual follow-up questions.
-
-### 👍 Response Feedback
-Users can provide feedback on generated responses (👍 Helpful / 👎 Not Helpful) to track retrieval quality.
-
 ---
 
-## 🛠️ Tech Stack
+# 🤖 Target Architecture — RAG + JEV
 
-| Category | Technologies |
-| :--- | :--- |
-| **Frontend** | React 18, JavaScript / TypeScript, HTML5, Vanilla CSS / Tailwind |
-| **Backend** | Python 3.9+, Flask, Flask-CORS |
-| **AI / LLM** | LangChain, Hugging Face Transformers, Sentence Transformers, OpenAI API |
-| **Vector Store** | ChromaDB / FAISS |
-| **Document Processing** | PyPDF, python-docx |
-| **Testing** | pytest |
-| **Containerization** | Docker, Docker Compose |
-| **Version Control** | Git, GitHub |
-
----
-
-## 📂 Project Structure
+The next architecture introduces JEV between the API and the existing RAG system.
 
 ```text
-Domain-Specific Q&A Chatbot — RAG/
+                       USER
+                         │
+                         ▼
+                ┌─────────────────┐
+                │  React Frontend │
+                └────────┬────────┘
+                         │
+                         ▼
+                ┌─────────────────┐
+                │    Flask API    │
+                └────────┬────────┘
+                         │
+                         ▼
+              ┌─────────────────────┐
+              │   JEV Orchestrator  │
+              │                     │
+              │ • Intent Detection  │
+              │ • Query Routing     │
+              │ • Workflow Select.  │
+              │ • Agent Control     │
+              └──────────┬──────────┘
+                         │
+             ┌───────────┼───────────┐
+             │           │           │
+             ▼           ▼           ▼
+        ┌────────┐  ┌──────────┐ ┌────────────┐
+        │RAG Tool│  │ Summary  │ │ Comparison │
+        │        │  │ Workflow │ │  Workflow  │
+        └────┬───┘  └──────────┘ └────────────┘
+             │
+             ▼
+       ┌──────────────┐
+       │ RAG Pipeline │
+       └──────┬───────┘
+              │
+       ┌──────┼─────────┐
+       ▼      ▼         ▼
+   Retriever  Context   Generator
+       │      │         │
+       └──────┼─────────┘
+              ▼
+             LLM
+              │
+              ▼
+     Grounded Answer
+       + Citations
+```
+
+---
+
+# 🔍 RAG Pipeline
+
+The current RAG pipeline follows:
+
+```text
+User Question
+      │
+      ▼
+Question Embedding
+      │
+      ▼
+Vector Similarity Search
+      │
+      ▼
+Top-K Relevant Chunks
+      │
+      ▼
+Similarity Filtering
+      │
+      ▼
+Context Construction
+      │
+      ▼
+Grounded Prompt
+      │
+      ▼
+LLM Generation
+      │
+      ▼
+Answer + Sources
+```
+
+The existing RAG implementation remains the foundation of the project.
+
+---
+
+# 🤖 JEV Integration
+
+## Why JEV?
+
+JEV is planned as an **orchestration layer** on top of the existing RAG system.
+
+The goal is not to replace RAG.
+
+Instead:
+
+```text
+                JEV
+                 │
+       ┌─────────┼─────────┐
+       ▼         ▼         ▼
+      RAG     Summary   Comparison
+      Tool     Tool       Tool
+       │
+       ▼
+ Existing RAG Pipeline
+```
+
+This allows the system to evolve from:
+
+> "Always perform RAG"
+
+into:
+
+> "Understand the user's request and select the appropriate workflow."
+
+---
+
+# 🛣️ Project Roadmap
+
+## Phase 1 — Project Foundation ✅
+
+**Status: Completed**
+
+- Project structure
+- Flask backend
+- React frontend foundation
+- Environment configuration
+- Document ingestion foundation
+- Basic API structure
+- Vector database setup
+- Initial RAG components
+
+---
+
+# Phase 2 — Core RAG Engine ✅
+
+**Status: Completed**
+
+### Implemented
+
+- Query embeddings
+- Cosine similarity search
+- Top-K retrieval
+- Similarity score filtering
+- Context construction
+- Anti-hallucination prompting
+- LLM generation
+- OpenAI/Groq provider support
+- Grounded responses
+- `/api/chat`
+- Source citations
+- Input validation
+- Error handling
+- Conversation history
+- Stub mode without API key
+
+---
+
+# Phase 3 — JEV Orchestration 🚧
+
+**Status: Planned / Next Major Phase**
+
+This phase introduces JEV without rewriting the existing RAG implementation.
+
+### Planned
+
+- JEV foundation
+- JEV orchestrator
+- RAG tool integration
+- Intelligent query routing
+- API integration
+- Agent memory
+- Initial Agentic RAG
+- Testing
+- RAG vs JEV+RAG evaluation
+
+### Target Flow
+
+```text
+/api/chat
+    ↓
+JEV Orchestrator
+    ↓
+Selected Tool
+    ↓
+RAG / Workflow
+    ↓
+Grounded Response
+```
+
+---
+
+# Phase 4 — Advanced Agentic RAG 🚧
+
+**Status: Planned**
+
+- Query rewriting
+- Hybrid retrieval
+- Semantic + keyword search
+- Reranking
+- Multi-step retrieval
+- Context compression
+- Source verification
+- Agentic reasoning
+- Improved memory
+- Failure recovery
+
+---
+
+# Phase 5 — Premium Frontend 🚧
+
+**Status: Planned**
+
+- Modern chat interface
+- Document management dashboard
+- Upload interface
+- Source citation cards
+- Retrieval score visualization
+- Conversation history
+- Agent activity indicator
+- JEV workflow status
+- Responsive design
+- Dark/light theme
+- Streaming responses
+
+---
+
+# Phase 6 — Evaluation & Analytics 🚧
+
+**Status: Planned**
+
+Metrics:
+
+- Retrieval quality
+- Answer relevance
+- Faithfulness
+- Citation accuracy
+- Hallucination rate
+- JEV routing accuracy
+- Response latency
+- Query success rate
+
+---
+
+# Phase 7 — Production & Deployment 🚧
+
+**Status: Planned**
+
+- Docker
+- Production configuration
+- Authentication
+- Database integration
+- API security
+- Rate limiting
+- Logging
+- Monitoring
+- Error tracking
+- CI/CD
+- Cloud deployment
+
+---
+
+# 📁 Project Structure
+
+```text
+Domain-Specific-Q-A-Chatbot-RAG/
+│
 ├── backend/
+│   ├── agents/                  # Phase 3 — JEV
+│   │   ├── __init__.py
+│   │   ├── orchestrator.py
+│   │   ├── router.py
+│   │   └── tools.py
+│   │
 │   ├── api/
-│   │   ├── __init__.py
-│   │   └── routes.py           # REST endpoints (/upload, /search, /chat, /documents, /health)
+│   │   └── routes.py
+│   │
 │   ├── config/
-│   │   ├── __init__.py
-│   │   └── settings.py         # Centralized configuration & environment variables
-│   ├── models/
-│   │   └── __init__.py
+│   │   └── settings.py
+│   │
 │   ├── rag/
-│   │   ├── __init__.py
-│   │   ├── chunking.py         # Text cleaning and recursive chunking
-│   │   ├── embeddings.py       # Embeddings manager & ChromaDB vector store
-│   │   ├── generation.py       # Prompt templates & LLM generation
-│   │   ├── ingestion.py        # PDF, TXT, DOCX text extractors
-│   │   ├── pipeline.py         # Complete ingestion & indexing pipeline
-│   │   └── retrieval.py        # Semantic retrieval wrapper
-│   └── app.py                  # Flask application entry point & factory
+│   │   ├── chunking.py
+│   │   ├── embeddings.py
+│   │   ├── generation.py
+│   │   ├── ingestion.py
+│   │   ├── pipeline.py
+│   │   └── retrieval.py
+│   │
+│   └── app.py
+│
 ├── tests/
-│   ├── __init__.py
-│   ├── test_pipeline.py        # Phase 1 unit & integration tests
-│   └── test_phase2.py         # Phase 2 RAG query & generation tests
-├── .env.example                # Example environment configuration
-├── .gitignore                  # Git ignore rules
-├── requirements.txt            # Python dependencies
-├── CONTRIBUTORS.md             # Project contributors
-└── README.md                   # Project documentation
+│   ├── test_pipeline.py
+│   ├── test_phase2.py
+│   ├── test_jev_orchestrator.py
+│   ├── test_jev_router.py
+│   └── test_agentic_rag.py
+│
+├── requirements.txt
+├── .env.example
+├── docker-compose.yml
+└── README.md
 ```
 
----
-
-## 🗺️ Development Roadmap
-
-The project is developed in **4 major phases**:
-
-### 🟢 Phase 1 — Foundation & Core Backend `[COMPLETED]`
-* [x] Initialize Git repository
-* [x] Set up Python virtual environment
-* [x] Create backend project structure
-* [x] Configure `requirements.txt`
-* [x] Implement document upload
-* [x] Extract text from PDF/TXT/DOCX files
-* [x] Implement text cleaning
-* [x] Implement document chunking with metadata enrichment
-* [x] Generate dense embeddings (`sentence-transformers/all-MiniLM-L6-v2`)
-* [x] Set up ChromaDB persistent vector store
-* [x] Build document indexing pipeline
-* [x] Core Flask REST API endpoints
-* [x] 12 Passing unit & integration tests
+> `agents/` and the JEV-specific tests are part of the planned Phase 3 implementation.
 
 ---
 
-### 🟢 Phase 2 — RAG Pipeline & API `[COMPLETED]`
-* [x] Implement query embeddings & cosine similarity search
-* [x] Retrieve Top-K relevant chunks with score filtering
-* [x] Build context generation & anti-hallucination prompt template
-* [x] Integrate LLM (OpenAI / Groq) with automatic provider selection
-* [x] Implement grounded response generation
-* [x] Implement conversational `/api/chat` endpoint with source citations
-* [x] Add error handling and input validation
-* [x] Support optional conversation history for multi-turn context
-* [x] Graceful stub mode when no API key is configured
+# 🧰 Technology Stack
+
+### Backend
+- Python
+- Flask
+- REST API
+
+### AI / RAG
+- Retrieval-Augmented Generation
+- Sentence Transformers
+- Embeddings
+- ChromaDB
+- LangChain components where applicable
+- OpenAI
+- Groq
+- JEV orchestration
+
+### Frontend
+- React
+- JavaScript / TypeScript
+- HTML5
+- CSS3
+
+### DevOps
+- Docker
+- Docker Compose
+- GitHub
+- CI/CD — planned
+- Cloud deployment — planned
 
 ---
 
-### 🟣 Phase 3 — Frontend & Integration
-* [ ] Initialize React application
-* [ ] Design chatbot interface
-* [ ] Create message components
-* [ ] Create document upload interface
-* [ ] Connect React with Flask REST API
-* [ ] Implement chat state management & loading skeletons
-* [ ] Display AI responses and source references drawer
-* [ ] Implement responsive design & dark mode
+# 📊 Evaluation Strategy
 
----
+The project will compare:
 
-### 🔴 Phase 4 — Polish, Testing & Deployment
-* [ ] UI/UX polishing & micro-animations
-* [ ] Implement multi-turn conversation memory
-* [ ] Add response feedback (👍 / 👎)
-* [ ] Comprehensive end-to-end testing
-* [ ] Dockerize frontend and backend (`Dockerfile`, `docker-compose.yml`)
-* [ ] Performance optimization & caching
-* [ ] Complete deployment & demo
-
----
-
-## ⚙️ Getting Started
-
-### Prerequisites
-* Python 3.9+
-* Node.js & npm (for Phase 3)
-* Git
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/Premanshu-Kumar/Domain-Specific-Q-A-Chatbot-RAG.git
-cd Domain-Specific-Q-A-Chatbot-RAG
+```text
+Traditional RAG
+       VS
+JEV + RAG
 ```
 
-### 2. Configure Environment Variables
-Copy `.env.example` to `.env`:
-```bash
-cp .env.example .env
+| Metric | Basic RAG | JEV + RAG |
+|---|---:|---:|
+| Retrieval Quality | ✓ | ✓ |
+| Answer Relevance | ✓ | ✓ |
+| Faithfulness | ✓ | ✓ |
+| Citation Accuracy | ✓ | ✓ |
+| Tool Selection | — | ✓ |
+| Query Refinement | — | ✓ |
+| Multi-step Retrieval | — | ✓ |
+| Hallucination Rate | ✓ | ✓ |
+| Latency | ✓ | ✓ |
+
+---
+
+# 💼 Resume Description
+
+> **Built an Agentic Domain-Specific Q&A Assistant using Retrieval-Augmented Generation (RAG), vector search, LLMs, and JEV-based orchestration to provide grounded, citation-backed responses from private document collections.**
+
+---
+
+# 🔮 Future Enhancements
+
+- Multi-agent architecture
+- Advanced hybrid retrieval
+- Cross-document reasoning
+- Automatic document summarization
+- Knowledge graph integration
+- Personalized knowledge bases
+- Advanced evaluation datasets
+- Streaming responses
+- Voice interaction
+- Multimodal document understanding
+- Enterprise authentication
+- Role-based access control
+- Observability and monitoring
+
+---
+
+# 📌 Current Status
+
+```text
+Phase 1  ████████████████████  Completed
+Phase 2  ████████████████████  Completed
+Phase 3  ░░░░░░░░░░░░░░░░░░░░  Planned
+Phase 4  ░░░░░░░░░░░░░░░░░░░░  Planned
+Phase 5  ░░░░░░░░░░░░░░░░░░░░  Planned
+Phase 6  ░░░░░░░░░░░░░░░░░░░░  Planned
+Phase 7  ░░░░░░░░░░░░░░░░░░░░  Planned
 ```
-*(Optionally add your `OPENAI_API_KEY` or `GROQ_API_KEY`)*
 
-### 3. Setup Python Virtual Environment
-```bash
-# Create virtual environment
-python -m venv venv
+### Current Milestone
 
-# Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# Linux/macOS:
-source venv/bin/activate
+**Phase 2 — Core RAG Engine: Completed ✅**
 
-# Install dependencies
-pip install -r requirements.txt
-```
+### Next Milestone
 
-### 4. Run Tests
-```bash
-pytest -v
-```
-
-### 5. Start Backend Server
-```bash
-python backend/app.py
-```
-The API server will run at `http://localhost:5000`.
+**Phase 3 — JEV Orchestration 🚧**
 
 ---
 
-## 💻 API Endpoints
+# 📜 License
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/` | API status and available endpoints |
-| `GET` | `/api/health` | Service health check |
-| `POST` | `/api/upload` | Upload & index documents (`.pdf`, `.txt`, `.docx`) |
-| `POST` | `/api/search` | Semantic search over indexed documents |
-| `GET` | `/api/documents` | List indexed documents & collection statistics |
-| `POST` | `/api/chat` | Chat with RAG knowledge assistant (grounded answers + citations) |
+This project is licensed under the **Apache License 2.0**.
+
+See the [`LICENSE`](LICENSE) file for the full license text.
 
 ---
 
-## 📊 RAG Evaluation Metrics
-
-| Metric | Purpose |
-| :--- | :--- |
-| **Retrieval Accuracy** | Measures relevance of retrieved chunks |
-| **Context Precision** | Measures proportion of retrieved context that is useful |
-| **Context Recall** | Measures whether all required ground truth facts were retrieved |
-| **Answer Relevance** | Measures alignment between the generated answer and the user question |
-| **Faithfulness** | Measures whether the answer is strictly derived from retrieved context |
-| **Latency** | Measures end-to-end response time |
-
----
-
-## 💼 Resume Highlights
-
-> **Developed a full-stack Retrieval-Augmented Generation (RAG) knowledge assistant using React, Flask, LangChain, ChromaDB, and Sentence Transformers, enabling context-aware question answering over custom document collections with source-grounded responses and anti-hallucination guardrails.**
-
----
-
-## 👥 Contributors
-
-| Name | Role |
-|------|------|
-| **Premanshu Kumar** | Project author, Phase 1 & overall design |
-| **Grok AI Bot** ([xAI](https://x.ai)) | Phase 2 implementation (RAG pipeline, LLM generation, `/api/chat`, tests, docs) |
-
-See [CONTRIBUTORS.md](CONTRIBUTORS.md) for more details.
-
----
-
-## 📜 License
-
-This project is licensed under the **MIT License** - see the `LICENSE` file for details.
-
----
-
-## 👨‍💻 Author
+# 👨‍💻 Author
 
 **Premanshu Kumar**
-* GitHub: [@Premanshu-Kumar](https://github.com/Premanshu-Kumar)
+
+B.Tech — Computer Science Engineering  
+Data Science Specialization
+
+GitHub: `Premanshu-Kumar`
+
+---
+
+⭐ If you find this project useful, consider giving the repository a star!
